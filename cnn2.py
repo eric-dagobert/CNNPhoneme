@@ -35,11 +35,11 @@ def train_eval():
 def save_set(x_t,x_e,y_t,y_e):
     np.save('x_t36a', x_t)
     np.save('x_e36a', x_e)
-    np.save('y_t36a', y_t)            
-    np.save('y_e36a', y_e)
+    np.save('y_t36', y_t)            
+    np.save('y_e36', y_e)
     
 def load_set():
-    return np.load('x_t36a.npy'),np.load('x_e36a.npy'),np.load('y_t36a.npy'),np.load('y_e36a.npy') 
+    return np.load('x_t36.npy'),np.load('x_e36.npy'),np.load('y_t36.npy'),np.load('y_e36.npy') 
     
     
 def keras_nn5d(X,labels,h,w,d,epochs,subs=-1,replay=True):   
@@ -63,7 +63,7 @@ def keras_nn5d(X,labels,h,w,d,epochs,subs=-1,replay=True):
         
     batch_print_callback =keras.callbacks.LambdaCallback(on_batch_begin=pp) 
     if replay:
-        model = keras.models.load_model('model_convect5d36a.kn')
+        model = keras.models.load_model('model_convect5d36.kn')
     else:
         model= rnn(h, w, d,True)
         #model = keras.models.load_model('model_reducedconv.kn')
@@ -76,14 +76,14 @@ def keras_nn5d(X,labels,h,w,d,epochs,subs=-1,replay=True):
         
     for i in range(0,10):
         model.fit(x_train, y_train, batch_size=1000, epochs=epochs,callbacks=[batch_print_callback],shuffle=True)
-        model.save('model_convect5d36a.kn') 
+        model.save('model_convect5d36.kn') 
         score = model.evaluate(x_eval, y_eval, batch_size=x_eval.shape[0]) 
         print
         print score
 
 def rnn(h,w,d,multid = False):
     model = Sequential()
-    model.add(Conv2D(64, (8, 8),input_shape=(h,w,1)))        
+    model.add(Conv2D(64, (6, 6),input_shape=(h,w,1)))        
     model.add(Activation('relu'))
     model.add(MaxPooling2D(pool_size=(3, 3))) 
     #model.add(Conv2D(64, (3, 3)))
@@ -95,17 +95,17 @@ def rnn(h,w,d,multid = False):
     #model.add(Activation('relu'))   
         
     #model.add(MaxPooling2D(pool_size=(2, 2))) 
-    #model.add(Dropout(0.1))
+    model.add(Dropout(0.3))
        
     model.add(Flatten())
     #model.add(Dense(h*w))
-    #model.add(Dense(1024))
-    #model.add(Activation('relu'))
+    model.add(Dense(1024))
+    model.add(Activation('relu'))
     #model.add(Dense(512))
     #model.add(Activation('relu'))
     model.add(Dense(512))
     model.add(Activation('relu'))
-    model.add(Dropout(0.25))    
+    #model.add(Dropout(0.25))    
     
     model.add(Dense(512))
     model.add(Activation('relu'))
