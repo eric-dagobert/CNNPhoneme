@@ -33,8 +33,8 @@ def train_eval():
     keras_nn5d(data, labels,h ,w, OUTFEAT,50,SUBS)
    
 def save_set(x_t,x_e,y_t,y_e):
-    np.save('x_t36a', x_t)
-    np.save('x_e36a', x_e)
+    np.save('x_t36', x_t)
+    np.save('x_e36', x_e)
     np.save('y_t36', y_t)            
     np.save('y_e36', y_e)
     
