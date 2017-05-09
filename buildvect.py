@@ -40,11 +40,19 @@ def pad(padvalue,s,twidth):
     s1 = np.hstack((z1,s))
     s1 = np.hstack((s1,z2))    
     return s1
+
+def padright(padvalue,s,twidth):
+    pad = (twidth-s.shape[1])
+    z1 = np.zeros((HEIGHT,pad))
+    z1[:,:]=padvalue
+    s = np.hstack((s,z1))    
+    return s
+
 def plotone(freqs,bins,Z,title, subplot=None):
     z = 10*np.log10(Z)
     z = np.flipud(z)
-    
-    freqs += 0
+    #
+    #freqs += 0
     extent = 0,np.amax(bins),freqs[0],freqs[-1]
     if subplot is None :
         plt.figure()
@@ -89,10 +97,12 @@ def extract_features(sig,begin,endd, rate,nphones, size_one):
     l= size_one*1.5*nphones
     L = endd-begin
     sig = sig[begin:endd]
-    #L = len(sig)
+    noverlap=110
+    L = len(sig)
     noverlap = nfft-int(round(L/l,0))
     if noverlap >= nfft:
         noverlap = nfft -1
+    #noverlap = 128
     sp = mlab.specgram(sig, NFFT=nfft,Fs=rate,sides='default',scale_by_freq=True,noverlap=noverlap)
     spdata = sp[0]
     #plt.show()
@@ -195,18 +205,17 @@ def mfcc_featurespca(signal,start,end,rate):
     
     subd = data.reshape(1,-1,WIDTH) 
     return subd
+
 def spec_features(signal,start,end,rate,splitflag=False):
     global WIDTH
     
-    pc = decomposition.PCA(n_components=WIDTH, whiten=True)
-                            
+    pc = decomposition.PCA(n_components=WIDTH, whiten=True)                            
     data, freqs, bins  = extract_features(signal, start, end, rate, 1, WIDTH)
 
     data = np.log10(data)
-    data[data==-np.inf]=-11
-    
+    data[data==-np.inf]=-14
     if data.shape[1] < WIDTH:
-        data = pad(-11, data, WIDTH)
+        data = padright(-14, data, WIDTH)    
     
     d1= pc.fit_transform(data)
     data = pc.inverse_transform(d1)
@@ -220,8 +229,11 @@ def spec_features(signal,start,end,rate,splitflag=False):
     return subd
     
  
-     
-
+def check(vph2,ph2):
+    ph = featuredic.cattophone(vph2)
+    if ph != ph2:
+        print ph ,'!=',ph2
+        
 def builddata(n=-1,plot=False):
     fulldata = None         
     dsize=0
@@ -243,16 +255,19 @@ def builddata(n=-1,plot=False):
         (rate,signal)= scipy.io.wavfile.read(str(path))
         sentdata = None
         for prev,ph,ne in  zip(phones[:-2],phones[1:-1],phones[2:]):
-            ph1,ph2,ph3 =featuredic.fold_phones2(prev[0]),featuredic.fold_phones2(ph[0]),featuredic.fold_phones2(ne[0])
-            offsetback = min(prev[2]-prev[1],ph[2]-ph[1])*.3
-            offsetforw = min(ne[2]-ne[1],ph[2]-ph[1])*.2
+            ph1,ph2,ph3 =featuredic.fold_phones(prev[0]),featuredic.fold_phones(ph[0]),featuredic.fold_phones(ne[0])
+            offsetback = min(prev[2]-prev[1],ph[2]-ph[1])*0.3
+            offsetforw = min(ne[2]-ne[1],ph[2]-ph[1])*0.2
             if ph1 is None:
-                offsetback = min(prev[2]-prev[1],ph[2]-ph[1]) *.8 
+                offsetback = min(prev[2]-prev[1],ph[2]-ph[1])*0.8 
             if ph3 is None:
-                offsetforw = min(ne[2]-ne[1],ph[2]-ph[1])*.6
+                offsetforw = min(ne[2]-ne[1],ph[2]-ph[1])*0.6
             start =int( ph[1] - offsetback)
             end = int( ph[2] + offsetforw)               
             vph1,vph2,vph3 = featuredic.phonetovec(ph1), featuredic.phonetovec(ph2), featuredic.phonetovec(ph3)      
+            if ph2 == 'sil':
+                print 'sil'
+          
             #if phone is None : continue
             phlist.append(end-start)            
             subd=None
@@ -261,29 +276,32 @@ def builddata(n=-1,plot=False):
                 continue    
             if vph2 is None:
                 continue
+            #if ph2 in ['d','k','ix','sh','ch']:
+            #   plotim(subd, ph2)
+            #  plot=True
+            check(vph2,ph2)
             ydata =vph2 if ydata is None else np.vstack((ydata,[vph2]))
-        
             fulldata = [subd] if fulldata is None else np.concatenate((fulldata,[subd]),axis=0)
             
         if plot :    
-            plotsphones(sentdata, phones[1:-1])
+            #plotsphones(sentdata, phones[1:-1])
             plt.show()
     return fulldata,ydata
 
 
 HEIGHT=64
-WIDTH=36
+WIDTH=40
 #PLOT_ = True
-
+featuredic.cleardicts()
 data,labels = builddata()
 
 labels = labels.astype(float)
-
+MODEL='spec_6440'
 print 'data:',data.shape
 print 'labels:',labels.shape, '[',labels.min(),labels.max(),']'
-np.save('spec_6436mod', data)
-np.save('spec_6436mod_vec',labels)
-print 'saved in 6436mod'
+np.save(MODEL, data)
+np.save(MODEL +'vec',labels)
+print 'saved in',MODEL
     
 #print _shapes
 
